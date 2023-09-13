@@ -14,7 +14,7 @@ We would like to express our sincere gratitude to the creators and contributors 
 
 To install the development version from GitHub using devtools, run
 
-    devtools::install_github("imbs-hl/ranger")
+    devtools::install_github("Tim907/wranger")
 
 R version >= 3.1 is required. With recent R versions, multithreading on Windows platforms should just work. If you compile yourself, the new RTools toolchain is required.
 
