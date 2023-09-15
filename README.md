@@ -1,5 +1,5 @@
 # wranger: Weighted observations extension of ranger
-wranger is an extension of the popular package ranger that adds support for weighted observations during the random forest and gradient boosting model training. This package allows you to assign different weights to individual observations, giving you more control over the influence of each data point on the model's learning process.
+wranger is an extension of the popular package ranger that adds support for weighted observations during the Random Forest model training. This package allows you to assign different weights to individual observations, giving you more control over the influence of each data point on the model's learning process.
 
 We would like to express our sincere gratitude to the creators and contributors of the original Ranger package, which served as the foundation for this modified version. Ranger, developed by Marvin N. Wright, is a powerful machine learning library for R that has significantly influenced our work. Our extension builds upon Ranger's robust features, adding support for weighted observations while maintaining the spirit of open-source collaboration. We are indebted to the Ranger community for their invaluable contributions to the field of machine learning. Please support the original package: https://github.com/imbs-hl/ranger
 
