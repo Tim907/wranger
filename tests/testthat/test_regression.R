@@ -15,7 +15,7 @@ test_that("regression result is of class ranger with 14 elements", {
 test_that("regression prediction returns numeric vector", {
   expect_is(rg.reg$predictions, "numeric")
   expect_null(dim(rg.reg$predictions))
-  
+
   pred <- predict(rg.reg, iris)
   expect_is(pred$predictions, "numeric")
   expect_null(dim(pred$predictions))
@@ -46,16 +46,12 @@ test_that("Matrix interface prediction works for regression", {
   expect_silent(predict(rf, dat))
 })
 
-test_that("save.memory option works for regression", {
-  rf <- ranger(Sepal.Length ~ ., data = iris, save.memory = TRUE)
-  expect_equal(rf$treetype, "Regression")
-})
 
 test_that("predict.all for regression returns numeric matrix of size n x trees", {
   rf <- ranger(Petal.Width ~ ., iris, num.trees = 5, write.forest = TRUE)
   pred <- predict(rf, iris, predict.all = TRUE)
   expect_is(pred$predictions, "matrix")
-  expect_equal(dim(pred$predictions), 
+  expect_equal(dim(pred$predictions),
               c(nrow(iris), rf$num.trees))
 })
 
@@ -68,12 +64,12 @@ test_that("Mean of predict.all for regression is equal to forest prediction", {
 
 test_that("Alternative interface regression prediction works if only independent variable given, one independent variable", {
   n <- 50
-  
+
   dt <- data.frame(x = runif(n), y = rbinom(n, 1, 0.5))
   rf <- ranger(dependent.variable.name = "y", data = dt, num.trees = 5, write.forest = TRUE)
   expect_silent(predict(rf, dt))
   expect_silent(predict(rf, dt[, 1, drop = FALSE]))
-  
+
   dt2 <- data.frame(y = rbinom(n, 1, 0.5), x = runif(n))
   rf <- ranger(dependent.variable.name = "y", data = dt2, num.trees = 5, write.forest = TRUE)
   expect_silent(predict(rf, dt2))
@@ -82,12 +78,12 @@ test_that("Alternative interface regression prediction works if only independent
 
 test_that("Alternative interface regression prediction works if only independent variable given, two independent variables", {
   n <- 50
-  
+
   dt <- data.frame(x1 = runif(n), x2 = runif(n), y = rbinom(n, 1, 0.5))
   rf <- ranger(dependent.variable.name = "y", data = dt, num.trees = 5, write.forest = TRUE)
   expect_silent(predict(rf, dt))
   expect_silent(predict(rf, dt[, 1:2]))
-  
+
   dt2 <- data.frame(y = rbinom(n, 1, 0.5), x1 = runif(n), x2 = runif(n))
   rf <- ranger(dependent.variable.name = "y", data = dt2, num.trees = 5, write.forest = TRUE)
   expect_silent(predict(rf, dt2))
@@ -96,58 +92,16 @@ test_that("Alternative interface regression prediction works if only independent
 
 test_that("Alternative interface regression prediction: Results not all the same", {
   n <- 50
-  
+
   dt <- data.frame(x = runif(n), y = rbinom(n, 1, 0.5))
   rf <- ranger(dependent.variable.name = "y", data = dt, num.trees = 5, write.forest = TRUE)
   expect_gt(diff(range(predict(rf, dt)$predictions)), 0)
   expect_gt(diff(range(predict(rf, dt[, 1, drop = FALSE])$predictions)), 0)
-  
+
   dt2 <- data.frame(y = rbinom(n, 1, 0.5), x = runif(n))
   rf <- ranger(dependent.variable.name = "y", data = dt2, num.trees = 5, write.forest = TRUE)
   expect_gt(diff(range(predict(rf, dt2)$predictions)), 0)
   expect_gt(diff(range(predict(rf, dt2[, 2, drop = FALSE])$predictions)), 0)
-})
-
-## Special tests for random forests for regression
-test_that("Variance splitting not working on classification data", {
-  expect_error(ranger(Species ~ ., iris, splitrule = "variance"))
-})
-
-## Splitrule
-test_that("default splitrule is variance for regression", {
-  set.seed(42)
-  rf1 <- ranger(Sepal.Length ~ ., iris, num.trees = 5)
-  
-  set.seed(42)
-  rf2 <- ranger(Sepal.Length ~ ., iris, num.trees = 5, splitrule = "variance")
-  
-  expect_equal(rf1$splitrule, "variance")
-  expect_equal(rf2$splitrule, "variance")
-  expect_equal(rf1$prediction.error, rf2$prediction.error)
-})
-
-test_that("splitrule extratrees is different from variance for regression", {
-  set.seed(42)
-  rf1 <- ranger(Sepal.Length ~ ., iris, num.trees = 5, splitrule = "extratrees")
-  
-  set.seed(42)
-  rf2 <- ranger(Sepal.Length ~ ., iris, num.trees = 5, splitrule = "variance")
-  
-  expect_equal(rf1$splitrule, "extratrees")
-  expect_equal(rf2$splitrule, "variance")
-  expect_false(rf1$prediction.error == rf2$prediction.error)
-})
-
-test_that("splitrule maxstat is different from variance for regression", {
-  set.seed(42)
-  rf1 <- ranger(Sepal.Length ~ ., iris, num.trees = 5, splitrule = "maxstat")
-  
-  set.seed(42)
-  rf2 <- ranger(Sepal.Length ~ ., iris, num.trees = 5, splitrule = "variance")
-  
-  expect_equal(rf1$splitrule, "maxstat")
-  expect_equal(rf2$splitrule, "variance")
-  expect_false(rf1$prediction.error == rf2$prediction.error)
 })
 
 

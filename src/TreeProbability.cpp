@@ -60,7 +60,7 @@ void TreeProbability::addToTerminalNodes(size_t nodeID) {
     sum_weights += data->get_w(sampleID, 0);
   }
 
-  // Compute fractions
+  // Obsolete: Compute fractions
   // for (size_t i = 0; i < terminal_class_counts[nodeID].size(); ++i) {
   //   terminal_class_counts[nodeID][i] /= num_samples_in_node;
   // }

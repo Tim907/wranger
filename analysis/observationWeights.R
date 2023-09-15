@@ -2,14 +2,6 @@
 library(wranger)
 
 
-test_that("multiplication works", {
-  expect_equal(2 * 2, 4)
-})
-
-
-
-# TODO erstelle synthetischen apistrat, der möglichst eindrucksvoll Gewichtung zeigt
-
 test_that("weighting population classification", {
 
   data("api", package = "survey")
@@ -52,10 +44,10 @@ test_that("weighting population classification", {
 
   unloadNamespace("wranger")
   suppressMessages(library(ranger))
-  model1 = ranger::ranger(labels[trainIndex] ~ ., data = data.frame(dtrain), num.trees = 5000, seed = 1, probability = T, importance = "impurity")
+  model1 = ranger::ranger(labels[trainIndex] ~ ., data = data.frame(dtrain), num.trees = 5000, seed = 1, importance = "impurity")
   pred1 = predict(model1, data.frame(dtest))
 
-  model4 = ranger(labels[trainIndex] ~ ., data = data.frame(dtrain), num.trees = 5000, case.weights = weights, seed = 1, probability = T)
+  model4 = ranger(labels[trainIndex] ~ ., data = data.frame(dtrain), num.trees = 5000, case.weights = weights, seed = 1)
   pred4 = predict(model4, data.frame(dtest))
 
   unloadNamespace("ranger")
@@ -95,13 +87,7 @@ test_that("weighting population classification", {
   for (stype in levels(dtest$stype)) {
     print(mean(temp[dtest$stype == stype]))
   }
-
-  print("Test erfolgreich")
 })
-
-
-
-
 
 
 
@@ -193,14 +179,11 @@ test_that("weighting population regression", {
   for (stype in levels(dtest$stype)) {
     print(sqrt(mean(temp[dtest$stype == stype])))
   }
-
-  print("Test erfolgreich")
 })
 
 
 test_that("Weighting Regression", {
 
-  # devtools::install_github("mnwright/simpleRF")
   data("api", package = "survey")
   apistrat$sch.wide = ifelse(apistrat$sch.wide == "Yes", T, ifelse(apistrat$sch.wide == "No", F, NA))
   apistrat$missingTarget = as.numeric(is.na(apistrat$target))
@@ -212,7 +195,6 @@ test_that("Weighting Regression", {
   stopifnot(colSums(apply(X, 2, is.na)) == 0)
 
 
-  # folds = mltools::folds(nrow(X), nfolds = 2, seed = 1)
   folds = 1:nrow(X)
   rmse_baseline = NULL
   wrmse_baseline = NULL
@@ -230,12 +212,8 @@ test_that("Weighting Regression", {
 
     unloadNamespace("ranger")
     suppressMessages(library(wranger))
-    # model2 = ranger(growth ~ ., data = dtrain, num.trees = 1000, obs.weights = rep(1, nrow(dtrain)), seed = 1)
-    # pred2 = predict(model2, dtest)
-    # expect_equal(model1$predictions, model2$predictions)
-    # expect_equal(model1$prediction.error, model2$prediction.error)
-    # expect_equal(model1$r.squared, model2$r.squared)
-    # expect_equal(pred1$predictions, pred2$predictions)
+    model2 = ranger(growth ~ ., data = dtrain, num.trees = 1000, obs.weights = rep(1, nrow(dtrain)), seed = 1)
+    pred2 = predict(model2, dtest)
 
 
     weights = apistrat$pw[trainIndex]
@@ -249,7 +227,6 @@ test_that("Weighting Regression", {
     wrmse_baseline[k] = (pred1$predictions - dtest$growth)^2 * apistrat$pw[-trainIndex]
     wrmse[k] = (pred3$predictions - dtest$growth)^2 * apistrat$pw[-trainIndex]
   }
-  print("Test erfolgreich")
 
   sqrt(mean(rmse_baseline))
   sqrt(mean(rmse))
@@ -265,7 +242,6 @@ test_that("Weighting Regression", {
 
 test_that("Weighting Classification", {
 
-  # devtools::install_github("mnwright/simpleRF")
   data("api", package = "survey")
   apistrat$sch.wide = ifelse(apistrat$sch.wide == "Yes", T, ifelse(apistrat$sch.wide == "No", F, NA))
   apistrat$missingTarget = as.numeric(is.na(apistrat$target))
@@ -278,7 +254,6 @@ test_that("Weighting Classification", {
   stopifnot(colSums(apply(X, 2, is.na)) == 0)
 
 
-  # folds = mltools::folds(nrow(X), nfolds = 2, seed = 1)
   folds = 1:nrow(X)
   brier_baseline = NULL
   wbrier_baseline = NULL
@@ -291,18 +266,11 @@ test_that("Weighting Classification", {
 
     unloadNamespace("wranger")
     suppressMessages(library(ranger))
-    model1 = ranger::ranger(sch.wide ~ ., data = dtrain, num.trees = 5000, seed = 1, probability = T)
+    model1 = ranger::ranger(sch.wide ~ ., data = dtrain, num.trees = 5000, seed = 1)
     pred1 = predict(model1, dtest)
 
     unloadNamespace("ranger")
     suppressMessages(library(wranger))
-
-    # model2 = ranger(sch.wide ~ ., data = dtrain, num.trees = 5000, obs.weights = rep(1, nrow(dtrain)), seed = 1)
-    # pred2 = predict(model2, dtest)
-    # expect_equal(model1$predictions, model2$predictions)
-    # expect_equal(model1$prediction.error, model2$prediction.error)
-    # expect_equal(model1$r.squared, model2$r.squared)
-    # expect_equal(pred1$predictions, pred2$predictions)
 
 
     weights = apistrat$pw[trainIndex]
@@ -316,7 +284,6 @@ test_that("Weighting Classification", {
     wbrier_baseline[k] = (pred1$predictions[1] - (dtest$sch.wide == T))^2 + (pred1$predictions[2] - (dtest$sch.wide == F))^2 * apistrat$pw[-trainIndex]
     wbrier[k] = (pred3$predictions[1] - (dtest$sch.wide == T))^2 + (pred3$predictions[2] - (dtest$sch.wide == F))^2 * apistrat$pw[-trainIndex]
   }
-  print("Test erfolgreich")
 
   mean(brier_baseline)
   mean(brier)

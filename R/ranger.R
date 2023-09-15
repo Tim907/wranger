@@ -236,21 +236,28 @@ ranger <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
   if (!is.null(obs.weights) & !is.null(class.weights)) {
     warning("Warning: Use of obs.weights in combination with class.weights is highly experimental.")
   }
+  if(is.null(data)) {
+    n_samples = nrow(x)
+  } else {
+    n_samples = nrow(data)
+  }
   if(!is.null(obs.weights)) {
     if (length(obs.weights) > 0) {
-      if (length(obs.weights) != nrow(data)) {
+      if (length(obs.weights) != n_samples) {
         stop("Error: Number of observation weights not equal to number of samples.")
       }
     }
   }
+  if(is.null(obs.weights)) {
+    obs.weights = rep(1, n_samples)
+  }
 
   ######## Obsolete parameters with the implementation of obs.weights
   save.memory = FALSE
-  probability = FALSE
+  probability = TRUE
   splitrule = NULL
   ####
 
-  if(verbose) message("Running model with obs.weights")
   # Scale weights to sum to 1
   # obs.weights = obs.weights / sum(obs.weights)
 
@@ -868,6 +875,10 @@ ranger <- function(formula = NULL, data = NULL, num.trees = 500, mtry = NULL,
       stop("Error: Competing risks not supported yet. Use status=1 for events and status=0 for censoring.")
     }
   }
+
+
+  # if(verbose) message("Running model with obs.weights")
+
   ## Call Ranger
   result <- rangerCpp(treetype, x, y.mat, obs.weights.mat, independent.variable.names, mtry,
                       num.trees, verbose, seed, num.threads, write.forest, importance.mode,

@@ -21,7 +21,7 @@ test_that("no warning or error if character vector in data, alternative interfac
 })
 
 test_that("same result for single row", {
-  rf <- ranger(Species ~ ., dat, num.trees = 5, probability = TRUE)
+  rf <- ranger(Species ~ ., dat, num.trees = 5)
   pred1 <- predict(rf, dat)$predictions
   pred2 <- t(sapply(1:nrow(dat), function(i) {
     predict(rf, dat[i, ])$predictions
