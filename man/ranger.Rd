@@ -11,15 +11,14 @@ ranger(
   mtry = NULL,
   importance = "none",
   write.forest = TRUE,
-  probability = FALSE,
   min.node.size = NULL,
   min.bucket = NULL,
   max.depth = NULL,
   replace = TRUE,
   sample.fraction = ifelse(replace, 1, 0.632),
+  obs.weights = NULL,
   case.weights = NULL,
   class.weights = NULL,
-  splitrule = NULL,
   num.random.splits = 1,
   alpha = 0.5,
   minprop = 0.1,
@@ -36,7 +35,6 @@ ranger(
   quantreg = FALSE,
   oob.error = TRUE,
   num.threads = NULL,
-  save.memory = FALSE,
   verbose = TRUE,
   seed = NULL,
   dependent.variable.name = NULL,
@@ -60,8 +58,6 @@ ranger(
 
 \item{write.forest}{Save \code{ranger.forest} object, required for prediction. Set to \code{FALSE} to reduce memory usage if no prediction intended.}
 
-\item{probability}{Grow a probability forest as in Malley et al. (2012).}
-
 \item{min.node.size}{Minimal node size to split at. Default 1 for classification, 5 for regression, 3 for survival, and 10 for probability.}
 
 \item{min.bucket}{Minimal terminal node size. No nodes smaller than this value can occur. Default 3 for survival and 1 for all other tree types.}
@@ -72,11 +68,11 @@ ranger(
 
 \item{sample.fraction}{Fraction of observations to sample. Default is 1 for sampling with replacement and 0.632 for sampling without replacement. For classification, this can be a vector of class-specific values.}
 
+\item{obs.weights}{Weights for the contribution to the loss function of training observations. Observations with larger weights will have more impact in the node splitting rule for the trees.}
+
 \item{case.weights}{Weights for sampling of training observations. Observations with larger weights will be selected with higher probability in the bootstrap (or subsampled) samples for the trees.}
 
 \item{class.weights}{Weights for the outcome classes (in order of the factor levels) in the splitting rule (cost sensitive learning). Classification and probability prediction only. For classification the weights are also applied in the majority vote in terminal nodes.}
-
-\item{splitrule}{Splitting rule. For classification and probability estimation "gini", "extratrees" or "hellinger" with default "gini". For regression "variance", "extratrees", "maxstat" or "beta" with default "variance". For survival "logrank", "extratrees", "C" or "maxstat" with default "logrank".}
 
 \item{num.random.splits}{For "extratrees" splitrule.: Number of random splits to consider for each candidate splitting variable.}
 
@@ -110,8 +106,6 @@ ranger(
 
 \item{num.threads}{Number of threads. Default is number of CPUs available.}
 
-\item{save.memory}{Use memory saving (but slower) splitting mode. No effect for survival and GWAS data. Warning: This option slows down the tree growing, use only if you encounter memory problems.}
-
 \item{verbose}{Show computation status and estimated runtime.}
 
 \item{seed}{Random seed. Default is \code{NULL}, which generates the seed from \code{R}. Set to \code{0} to ignore the \code{R} seed.}
@@ -127,6 +121,8 @@ ranger(
 \item{y}{Response vector (dependent variable), alternative interface to data with formula or dependent.variable.name. For survival use a \code{Surv()} object or a matrix with time and status.}
 
 \item{...}{Further arguments passed to or from other methods (currently ignored).}
+
+\item{splitrule}{Splitting rule. For classification and probability estimation "gini". For regression "variance". For survival "logrank", "extratrees", "C" or "maxstat" with default "logrank".}
 }
 \value{
 Object of class \code{ranger} with elements
@@ -171,44 +167,44 @@ In contrast to other implementations, each tree returns a probability estimate a
 For details see Malley et al. (2012).
 
 Note that nodes with size smaller than \code{min.node.size} can occur because \code{min.node.size} is the minimal node size \emph{to split at}, as in original Random Forests.
-To restrict the size of terminal nodes, set \code{min.bucket}. 
+To restrict the size of terminal nodes, set \code{min.bucket}.
 Variables selected with \code{always.split.variables} are tried additionally to the mtry variables randomly selected.
-In \code{split.select.weights}, weights do not need to sum up to 1, they will be normalized later. 
+In \code{split.select.weights}, weights do not need to sum up to 1, they will be normalized later.
 The weights are assigned to the variables in the order they appear in the formula or in the data if no formula is used.
 Names of the \code{split.select.weights} vector are ignored.
-Weights assigned by \code{split.select.weights} to variables in \code{always.split.variables} are ignored. 
+Weights assigned by \code{split.select.weights} to variables in \code{always.split.variables} are ignored.
 The usage of \code{split.select.weights} can increase the computation times for large forests.
 
-Unordered factor covariates can be handled in 3 different ways by using \code{respect.unordered.factors}: 
-For 'ignore' all factors are regarded ordered, for 'partition' all possible 2-partitions are considered for splitting. 
+Unordered factor covariates can be handled in 3 different ways by using \code{respect.unordered.factors}:
+For 'ignore' all factors are regarded ordered, for 'partition' all possible 2-partitions are considered for splitting.
 For 'order' and 2-class classification the factor levels are ordered by their proportion falling in the second class, for regression by their mean response, as described in Hastie et al. (2009), chapter 9.2.4.
 For multiclass classification the factor levels are ordered by the first principal component of the weighted covariance matrix of the contingency table (Coppersmith et al. 1999), for survival by the median survival (or the largest available quantile if the median is not available).
-The use of 'order' is recommended, as it computationally fast and can handle an unlimited number of factor levels. 
-Note that the factors are only reordered once and not again in each split. 
+The use of 'order' is recommended, as it computationally fast and can handle an unlimited number of factor levels.
+Note that the factors are only reordered once and not again in each split.
 
 The 'impurity_corrected' importance measure is unbiased in terms of the number of categories and category frequencies and is almost as fast as the standard impurity importance.
 It is a modified version of the method by Sandri & Zuccolotto (2008), which is faster and more memory efficient. See Nembrini et al. (2018) for details.
-This importance measure can be combined with the methods to estimate p-values in \code{\link{importance_pvalues}}. 
-We recommend not to use the 'impurity_corrected' importance when making predictions since the feature permutation step might reduce predictive performance (a warning is raised when predicting on new data). 
+This importance measure can be combined with the methods to estimate p-values in \code{\link{importance_pvalues}}.
+We recommend not to use the 'impurity_corrected' importance when making predictions since the feature permutation step might reduce predictive performance (a warning is raised when predicting on new data).
 
-Regularization works by penalizing new variables by multiplying the splitting criterion by a factor, see Deng & Runger (2012) for details.  
+Regularization works by penalizing new variables by multiplying the splitting criterion by a factor, see Deng & Runger (2012) for details.
 If \code{regularization.usedepth=TRUE}, \eqn{f^d} is used, where \emph{f} is the regularization factor and \emph{d} the depth of the node.
 If regularization is used, multithreading is deactivated because all trees need access to the list of variables that are already included in the model.
 
 For a large number of variables and data frames as input data the formula interface can be slow or impossible to use.
 Alternatively \code{dependent.variable.name} (and \code{status.variable.name} for survival) or \code{x} and \code{y} can be used.
 Use \code{x} and \code{y} with a matrix for \code{x} to avoid conversions and save memory.
-Consider setting \code{save.memory = TRUE} if you encounter memory problems for very large datasets, but be aware that this option slows down the tree growing. 
+Consider setting \code{save.memory = TRUE} if you encounter memory problems for very large datasets, but be aware that this option slows down the tree growing.
 
-For GWAS data consider combining \code{ranger} with the \code{GenABEL} package. 
+For GWAS data consider combining \code{ranger} with the \code{GenABEL} package.
 See the Examples section below for a demonstration using \code{Plink} data.
-All SNPs in the \code{GenABEL} object will be used for splitting. 
-To use only the SNPs without sex or other covariates from the phenotype file, use \code{0} on the right hand side of the formula. 
+All SNPs in the \code{GenABEL} object will be used for splitting.
+To use only the SNPs without sex or other covariates from the phenotype file, use \code{0} on the right hand side of the formula.
 Note that missing values are treated as an extra category while splitting.
 
 See \url{https://github.com/imbs-hl/ranger} for the development version.
 
-With recent R versions, multithreading on Windows platforms should just work. 
+With recent R versions, multithreading on Windows platforms should just work.
 If you compile yourself, the new RTools toolchain is required.
 }
 \examples{
@@ -255,15 +251,15 @@ ranger(trait ~ ., data = dat.gwaa)
 \references{
 \itemize{
   \item Wright, M. N. & Ziegler, A. (2017). ranger: A fast implementation of random forests for high dimensional data in C++ and R. J Stat Softw 77:1-17. \doi{10.18637/jss.v077.i01}.
-  \item Schmid, M., Wright, M. N. & Ziegler, A. (2016). On the use of Harrell's C for clinical risk prediction via random survival forests. Expert Syst Appl 63:450-459. \doi{10.1016/j.eswa.2016.07.018}. 
+  \item Schmid, M., Wright, M. N. & Ziegler, A. (2016). On the use of Harrell's C for clinical risk prediction via random survival forests. Expert Syst Appl 63:450-459. \doi{10.1016/j.eswa.2016.07.018}.
   \item Wright, M. N., Dankowski, T. & Ziegler, A. (2017). Unbiased split variable selection for random survival forests using maximally selected rank statistics. Stat Med 36:1272-1284. \doi{10.1002/sim.7212}.
   \item Nembrini, S., Koenig, I. R. & Wright, M. N. (2018). The revival of the Gini Importance? Bioinformatics. \doi{10.1093/bioinformatics/bty373}.
-  \item Breiman, L. (2001). Random forests. Mach Learn, 45:5-32. \doi{10.1023/A:1010933404324}. 
-  \item Ishwaran, H., Kogalur, U. B., Blackstone, E. H., & Lauer, M. S. (2008). Random survival forests. Ann Appl Stat 2:841-860. \doi{10.1097/JTO.0b013e318233d835}. 
+  \item Breiman, L. (2001). Random forests. Mach Learn, 45:5-32. \doi{10.1023/A:1010933404324}.
+  \item Ishwaran, H., Kogalur, U. B., Blackstone, E. H., & Lauer, M. S. (2008). Random survival forests. Ann Appl Stat 2:841-860. \doi{10.1097/JTO.0b013e318233d835}.
   \item Malley, J. D., Kruppa, J., Dasgupta, A., Malley, K. G., & Ziegler, A. (2012). Probability machines: consistent probability estimation using nonparametric learning machines. Methods Inf Med 51:74-81. \doi{10.3414/ME00-01-0052}.
   \item Hastie, T., Tibshirani, R., Friedman, J. (2009). The Elements of Statistical Learning. Springer, New York. 2nd edition.
   \item Geurts, P., Ernst, D., Wehenkel, L. (2006). Extremely randomized trees. Mach Learn 63:3-42. \doi{10.1007/s10994-006-6226-1}.
-  \item Meinshausen (2006). Quantile Regression Forests. J Mach Learn Res 7:983-999. \url{https://www.jmlr.org/papers/v7/meinshausen06a.html}.  
+  \item Meinshausen (2006). Quantile Regression Forests. J Mach Learn Res 7:983-999. \url{https://www.jmlr.org/papers/v7/meinshausen06a.html}.
   \item Sandri, M. & Zuccolotto, P. (2008). A bias correction algorithm for the Gini variable importance measure in classification trees. J Comput Graph Stat, 17:611-628. \doi{10.1198/106186008X344522}.
   \item Coppersmith D., Hong S. J., Hosking J. R. (1999). Partitioning nominal attributes in decision trees. Data Min Knowl Discov 3:197-217. \doi{10.1023/A:1009869804967}.
   \item Deng & Runger (2012). Feature selection via regularized trees. The 2012 International Joint Conference on Neural Networks (IJCNN), Brisbane, Australia. \doi{10.1109/IJCNN.2012.6252640}.
